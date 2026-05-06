@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Overlay</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked-highlight/lib/index.umd.js"></script>
+  <style>
+    :root {
+      --text: #1a1a1a;
+      --text-dim: rgba(0, 0, 0, 0.45);
+      --bg: rgba(255, 255, 255, 0.25);
+      --border: rgba(0, 0, 0, 0.08);
+      --accent: #2563eb;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: transparent;
+      height: 100vh;
+      display: flex;
+      padding: 8px;
+      overflow: hidden;
+      color: var(--text);
+    }
+
+    .container {
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      backdrop-filter: blur(30px) saturate(1.4);
+      -webkit-backdrop-filter: blur(30px) saturate(1.4);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .titlebar {
+      height: 36px;
+      -webkit-app-region: drag;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      flex-shrink: 0;
+    }
+
+    .titlebar-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .titlebar-controls {
+      display: flex;
+      gap: 6px;
+      -webkit-app-region: no-drag;
+    }
+
+    .titlebar-controls span {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .ctrl-min { background: rgba(0,0,0,0.15); }
+    .ctrl-close { background: rgba(0,0,0,0.25); }
+    .ctrl-min:hover, .ctrl-close:hover { opacity: 0.7; }
+    .chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .chat::-webkit-scrollbar { width: 3px; }
+    .chat::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 3px; }
+
+    .msg {
+      max-width: 92%;
+      font-size: 13px;
+      line-height: 1.65;
+      animation: fadeUp 0.35s ease-out;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg.user {
+      align-self: flex-end;
+      background: rgba(0, 0, 0, 0.06);
+      padding: 8px 14px;
+      border-radius: 14px 14px 4px 14px;
+      font-weight: 500;
+      font-size: 12.5px;
+    }
+
+    .msg.bot {
+      align-self: flex-start;
+      padding: 2px 0;
+      font-weight: 400;
+    }
+
+    .msg.bot.scan-source {
+      font-size: 11px;
+      color: var(--text-dim);
+      border-left: 2px solid var(--accent);
+      padding-left: 10px;
+      max-height: 60px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .msg.bot p { margin: 4px 0; }
+    .msg.bot ul, .msg.bot ol { padding-left: 18px; margin: 6px 0; }
+    .msg.bot strong { font-weight: 600; }
+
+    .msg.bot pre {
+      background: rgba(0, 0, 0, 0.75) !important;
+      color: #e5e5e5;
+      padding: 10px 14px;
+      border-radius: 10px;
+      margin: 8px 0;
+      font-size: 12px;
+      overflow-x: auto;
+    }
+
+    .msg.bot code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+
+    .msg.bot :not(pre) > code {
+      background: rgba(0, 0, 0, 0.07);
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 11.5px;
+    }
+
+    .typing-dots::after {
+      content: '...';
+      animation: dots 1.2s steps(4, end) infinite;
+    }
+    @keyframes dots {
+      0%, 20% { content: ''; }
+      40% { content: '.'; }
+      60% { content: '..'; }
+      80%, 100% { content: '...'; }
+    }
+    .input-area {
+      padding: 10px 14px 16px;
+      flex-shrink: 0;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 6px 6px 6px 16px;
+      transition: border-color 0.25s;
+    }
+
+    .input-row:focus-within {
+      border-color: rgba(0, 0, 0, 0.2);
+    }
+
+    textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      resize: none;
+      height: 22px;
+      max-height: 80px;
+      line-height: 22px;
+    }
+
+    textarea::placeholder { color: var(--text-dim); }
+
+    .btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      color: var(--text-dim);
+      background: transparent;
+    }
+
+    .btn:hover { background: rgba(0,0,0,0.06); color: var(--text); }
+    .btn-send { background: var(--text); color: white; }
+    .btn-send:hover { background: #000; transform: scale(1.05); }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-dim);
+      margin-top: 8px;
+      padding: 0 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="titlebar">
+      <span class="titlebar-label">Ghost</span>
+      <div class="titlebar-controls">
+        <span class="ctrl-min" onclick="ipcRenderer.send('window-minimize')"></span>
+        <span class="ctrl-close" onclick="ipcRenderer.send('window-close')"></span>
+      </div>
+    </div>
+
+    <div class="chat" id="chat"></div>
+
+    <div class="input-area">
+      <div class="input-row">
+        <textarea id="input" rows="1" placeholder="Ask anything..."></textarea>
+        <button class="btn" title="Scan Screen (Ctrl+A)" onclick="triggerScan()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+        <button class="btn btn-send" onclick="sendMessage()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+      <div class="status">
+        <span id="statusLabel">Ready</span>
+        <span>Ctrl+A scan • Ctrl+L toggle</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    const { markedHighlight } = globalThis.markedHighlight;
+    marked.use(markedHighlight({
+      langPrefix: 'hljs language-',
+      highlight(code, lang) {
+        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+        return hljs.highlight(code, { language }).value;
+      }
+    }));
+
+    const API_KEY = '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';
+    const VISION_API_KEY = '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';
+    const API_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
+    const VISION_MODEL = 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning';
+    const TEXT_MODEL = 'meta/llama-3.3-70b-instruct';
+
+    const SYSTEM_PROMPT = 'Give ONLY the direct answer. MCQ: option + 1-line reason. Math/logic: bold answer. No greetings.';
+    let conversationHistory = [{ role: 'system', content: SYSTEM_PROMPT }];
+    const MAX_HISTORY = 4;
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('input');
+    const statusLabel = document.getElementById('statusLabel');
+
+    let isBusy = false;
+
+    function setStatus(msg) { statusLabel.textContent = msg; }
+
+    input.addEventListener('input', () => {
+      input.style.height = '22px';
+      input.style.height = Math.min(input.scrollHeight, 80) + 'px';
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+    function addMsg(text, sender, extraClass = '') {
+      const div = document.createElement('div');
+      div.className = `msg ${sender} ${extraClass}`.trim();
+      chat.appendChild(div);
+      if (sender === 'user') {
+        div.textContent = text;
+      } else {
+        renderBot(div, text);
+      }
+      chat.scrollTop = chat.scrollHeight;
+      return div;
+    }
+
+    function renderBot(div, raw) {
+      let clean = raw.replace(/<thought>[\s\S]*?<\/thought>/g, '').trim();
+      clean = clean.replace(/<thought>[\s\S]*$/g, '').trim();
+      div.innerHTML = clean ? marked.parse(clean) : '<span class="typing-dots"></span>';
+    }
+    async function streamResponse(body, botDiv, apiKey = API_KEY) {
+      let fullResponse = '';
+      let tokenCount = 0;
+
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`API ${res.status}: ${errText.slice(0, 80)}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ') || line.includes('[DONE]')) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+            const token = data.choices?.[0]?.delta?.content || '';
+            if (token) {
+              fullResponse += token;
+              tokenCount++;
+              if (tokenCount % 3 === 0) {
+                renderBot(botDiv, fullResponse);
+                chat.scrollTop = chat.scrollHeight;
+              }
+            }
+          } catch (e) {}
+        }
+      }
+
+      renderBot(botDiv, fullResponse);
+      chat.scrollTop = chat.scrollHeight;
+      return fullResponse;
+    }
+    async function sendMessage(overrideText = null) {
+      const text = overrideText || input.value.trim();
+      if (!text || isBusy) return;
+
+      isBusy = true;
+
+      addMsg(text, 'user');
+      if (!overrideText) {
+        input.value = '';
+        input.style.height = '22px';
+      }
+
+      setStatus('Thinking...');
+      conversationHistory.push({ role: 'user', content: text });
+
+      while (conversationHistory.length > MAX_HISTORY + 1) {
+        conversationHistory.splice(1, 2);
+      }
+
+      const botDiv = addMsg('', 'bot');
+
+      try {
+        const fullResponse = await streamResponse({
+          model: TEXT_MODEL,
+          messages: conversationHistory,
+          temperature: 0.2,
+          top_p: 0.7,
+          max_tokens: 1024,
+          stream: true
+        }, botDiv, API_KEY);
+
+        conversationHistory.push({ role: 'assistant', content: fullResponse });
+        setStatus('Ready');
+      } catch (err) {
+        console.error('[Ghost] API Error:', err.message);
+        botDiv.textContent = 'WARN ' + err.message;
+        setStatus('Error — try again');
+      } finally {
+        isBusy = false;
+      }
+    }
+    async function sendVisionMessage(base64Image) {
+      if (isBusy) return;
+      isBusy = true;
+
+      addMsg('📸 Screen captured — analyzing...', 'user', 'scan-source');
+      setStatus('Vision AI analyzing screen...');
+
+      const botDiv = addMsg('', 'bot');
+
+      try {
+        const fullResponse = await streamResponse({
+          model: VISION_MODEL,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: `You are looking at a screenshot of a screen. Your task:
+1. Identify EVERY question, problem, or MCQ visible in the image.
+2. For each question, provide the CORRECT answer.
+3. For MCQs: State the correct option letter (A/B/C/D) and explain in 1 line WHY it is correct.
+4. For math/logic: Show the key step and give the final answer in **bold**.
+5. For coding questions: Give the correct output or solution.
+6. Number your answers if there are multiple questions.
+Be accurate. Double-check your reasoning before answering.`
+                },
+                {
+                  type: 'image_url',
+                  image_url: { url: `data:image/jpeg;base64,${base64Image}` }
+                }
+              ]
+            }
+          ],
+          temperature: 0.3,
+          top_p: 0.9,
+          max_tokens: 4096,
+          stream: true,
+          extra_body: {
+            chat_template_kwargs: { enable_thinking: true },
+            reasoning_budget: 16384
+          }
+        }, botDiv, VISION_API_KEY);
+
+        setStatus('Ready');
+      } catch (err) {
+        console.error('[Ghost] Vision Error:', err.message);
+        botDiv.textContent = 'WARN ' + err.message;
+        setStatus('Error — try again');
+      } finally {
+        isBusy = false;
+      }
+    }
+    function triggerScan() {
+      if (isBusy) return;
+      ipcRenderer.send('trigger-scan');
+    }
+    ipcRenderer.on('status-update', (_, msg) => setStatus(msg));
+    ipcRenderer.on('screen-captured-image', (_, base64) => sendVisionMessage(base64));
+    ipcRenderer.on('clipboard-data', (_, text) => sendMessage(text));
+  </script>
+</body>
+</html>

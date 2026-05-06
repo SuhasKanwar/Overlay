@@ -1,38 +1,31 @@
 {
-  "name": "project_020_overlay",
-  "productName": "project_020_overlay",
+  "name": "overlay",
   "version": "1.0.0",
-  "description": "My Electron application description",
-  "main": "src/index.js",
-  "private": true,
+  "description": "overlay desktop app",
+  "homepage": "https://github.com/SuhasKanwar/Overlay#readme",
+  "bugs": {
+    "url": "https://github.com/SuhasKanwar/Overlay/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SuhasKanwar/Overlay.git"
+  },
+  "license": "ISC",
+  "author": "Suhas Kanwar",
+  "type": "commonjs",
+  "main": "index.js",
   "scripts": {
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish",
-    "lint": "echo \"No linting configured\""
-  },
-  "keywords": [],
-  "author": {
-    "name": "Suhas Kanwar",
-    "email": "suhas.kanwar@gmail.com"
-  },
-  "license": "MIT",
-  "dependencies": {
-    "dotenv": "^16.6.1",
-    "electron-squirrel-startup": "^1.0.1",
-    "highlight.js": "^11.11.1",
-    "marked": "^16.2.1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron . --disable-gpu"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^7.11.1",
-    "@electron-forge/maker-deb": "^7.11.1",
-    "@electron-forge/maker-rpm": "^7.11.1",
-    "@electron-forge/maker-squirrel": "^7.11.1",
-    "@electron-forge/maker-zip": "^7.11.1",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
-    "@electron-forge/plugin-fuses": "^7.11.1",
-    "@electron/fuses": "^1.8.0",
-    "electron": "42.0.0"
+    "@electron/packager": "^18.3.6",
+    "electron": "^27.3.11",
+    "electron-packager": "^17.1.2"
+  },
+  "dependencies": {
+    "auto-launch": "^5.0.6",
+    "axios": "^1.16.0",
+    "tesseract.js": "^7.0.0"
   }
 }
