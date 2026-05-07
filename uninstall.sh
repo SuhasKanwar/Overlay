@@ -4,6 +4,8 @@ set -euo pipefail
 APP_NAME="overlay"
 BIN_NAME="overlay"
 
+DISPLAY_NAME="Overlay"
+
 MODE="user"
 PREFIX="${PREFIX:-}"
 
@@ -80,6 +82,26 @@ fi
 LAUNCHER_PATH="$BIN_DIR/$BIN_NAME"
 DESKTOP_FILE="$DESKTOP_DIR/${APP_NAME}.desktop"
 
+SERVICE_NAME="${APP_NAME}.service"
+SERVICE_DIR="$HOME/.config/systemd/user"
+SERVICE_FILE="$SERVICE_DIR/$SERVICE_NAME"
+
+stop_user_service() {
+  if ! command -v systemctl >/dev/null 2>&1; then
+    return 0
+  fi
+  if ! systemctl --user show-environment >/dev/null 2>&1; then
+    return 0
+  fi
+  systemctl --user disable --now "$SERVICE_NAME" >/dev/null 2>&1 || true
+  systemctl --user daemon-reload >/dev/null 2>&1 || true
+}
+
+if [[ "$MODE" == "user" ]]; then
+  stop_user_service
+  rm -f "$SERVICE_FILE" || true
+fi
+
 rm -f "$LAUNCHER_PATH" || true
 rm -f "$DESKTOP_FILE" || true
 rm -rf "$PREFIX" || true
@@ -91,3 +113,7 @@ fi
 echo "OK: Removed launcher: $LAUNCHER_PATH"
 echo "OK: Removed desktop entry: $DESKTOP_FILE"
 echo "OK: Removed install prefix: $PREFIX"
+
+if [[ "$MODE" == "user" ]]; then
+  echo "OK: Removed user service: $SERVICE_NAME"
+fi
