@@ -98,7 +98,7 @@ async function captureScreen() {
     const primarySource = sources[0];
     if (!primarySource) {
       if (wasVisible) mainWindow.showInactive();
-      mainWindow.webContents.send('status-update', '⚠️ No screen source');
+      mainWindow.webContents.send('status-update', 'WARN No screen source');
       isProcessing = false;
       return;
     }
@@ -118,7 +118,7 @@ async function captureScreen() {
     if (wasVisible && !mainWindow.isVisible()) {
       mainWindow.showInactive();
     }
-    mainWindow.webContents.send('status-update', '⚠️ Capture failed');
+    mainWindow.webContents.send('status-update', 'WARN Capture failed');
   } finally {
     isProcessing = false;
   }
