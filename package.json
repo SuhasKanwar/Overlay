@@ -2,16 +2,7 @@
   "name": "overlay",
   "version": "1.0.0",
   "description": "overlay desktop app",
-  "homepage": "https://github.com/SuhasKanwar/Overlay#readme",
-  "bugs": {
-    "url": "https://github.com/SuhasKanwar/Overlay/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/SuhasKanwar/Overlay.git"
-  },
   "license": "ISC",
-  "author": "Suhas Kanwar",
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
