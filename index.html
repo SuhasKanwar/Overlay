@@ -270,9 +270,9 @@
       }
     }));
 
-    const GEMINI_API_KEY = 'PASTE_GEMINI_API_KEY_HERE';
-    const MODEL = 'gemini-3.7-flash';
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse`;
+    const API_KEY = 'PASTE_CODEX_EVERYWHERE_API_KEY_HERE';
+    const API_URL = 'https://codex-everywhere.com/v1/chat/completions';
+    const MODEL = 'gpt-5.6-sol';
 
     const SYSTEM_PROMPT = 'Give ONLY the direct answer. MCQ: option + 1-line reason. Math/logic: bold answer. No greetings.';
     let conversationHistory = [{ role: 'system', content: SYSTEM_PROMPT }];
@@ -314,23 +314,14 @@
       clean = clean.replace(/<thought>[\s\S]*$/g, '').trim();
       div.innerHTML = clean ? marked.parse(clean) : '<span class="typing-dots"></span>';
     }
-    function toGeminiContents(messages) {
-      return messages
-        .filter(message => message.role !== 'system')
-        .map(message => ({
-          role: message.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: message.content }]
-        }));
-    }
-
-    async function streamResponse(body, botDiv) {
+    async function streamResponse(body, botDiv, apiKey = API_KEY) {
       let fullResponse = '';
       let tokenCount = 0;
 
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: {
-          'x-goog-api-key': GEMINI_API_KEY,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
           'Accept': 'text/event-stream'
         },
@@ -358,9 +349,7 @@
           if (!line.startsWith('data: ') || line.includes('[DONE]')) continue;
           try {
             const data = JSON.parse(line.slice(6));
-            const token = data.candidates?.[0]?.content?.parts
-              ?.map(part => part.text || '')
-              .join('') || '';
+            const token = data.choices?.[0]?.delta?.content || '';
             if (token) {
               fullResponse += token;
               tokenCount++;
@@ -400,14 +389,13 @@
 
       try {
         const fullResponse = await streamResponse({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: toGeminiContents(conversationHistory),
-          generationConfig: {
-            temperature: 0.2,
-            topP: 0.7,
-            maxOutputTokens: 1024
-          }
-        }, botDiv);
+          model: MODEL,
+          messages: conversationHistory,
+          temperature: 0.2,
+          top_p: 0.7,
+          max_tokens: 1024,
+          stream: true
+        }, botDiv, API_KEY);
 
         conversationHistory.push({ role: 'assistant', content: fullResponse });
         setStatus('Ready');
@@ -430,12 +418,14 @@
 
       try {
         const fullResponse = await streamResponse({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: [{
-            role: 'user',
-            parts: [
+          model: MODEL,
+          messages: [
             {
-              text: `You are looking at a screenshot of a screen. Your task:
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: `You are looking at a screenshot of a screen. Your task:
 1. Identify EVERY question, problem, or MCQ visible in the image.
 2. For each question, provide the CORRECT answer.
 3. For MCQs: State the correct option letter (A/B/C/D) and explain in 1 line WHY it is correct.
@@ -443,20 +433,19 @@
 5. For coding questions: Give the correct output or solution.
 6. Number your answers if there are multiple questions.
 Be accurate. Double-check your reasoning before answering.`
-            },
-            {
-              inline_data: {
-                mime_type: 'image/jpeg',
-                data: base64Image
-              }
+                },
+                {
+                  type: 'image_url',
+                  image_url: { url: `data:image/jpeg;base64,${base64Image}` }
+                }
+              ]
             }
-          ]}],
-          generationConfig: {
-            temperature: 0.3,
-            topP: 0.9,
-            maxOutputTokens: 4096
-          }
-        }, botDiv);
+          ],
+          temperature: 0.3,
+          top_p: 0.9,
+          max_tokens: 4096,
+          stream: true
+        }, botDiv, API_KEY);
 
         setStatus('Ready');
       } catch (err) {
