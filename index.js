@@ -146,7 +146,7 @@ app.whenReady().then(() => {
         mainWindow.setAlwaysOnTop(true, 'screen-saver');
       }
     },
-    'CommandOrControl+A': () => captureScreen()
+    'CommandOrControl+G': () => captureScreen()
   };
 
   let allRegistered = true;
@@ -159,7 +159,7 @@ app.whenReady().then(() => {
   }
 
   if (allRegistered) {
-    console.log('[Ghost] All shortcuts registered (Ctrl+L, Ctrl+A)');
+    console.log('[Ghost] All shortcuts registered (Ctrl+L, Ctrl+G)');
   }
 });
 
